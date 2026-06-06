@@ -12,8 +12,13 @@ export default function Layout({ children }: Props) {
       style={{ background: 'var(--color-bg-primary)' }}
     >
       <Sidebar />
+
+      {/*
+        Desktop (md+): ml-64 para compensar a sidebar fixa
+        Mobile: ml-0 + pt-14 para compensar a topbar fixa de 56px
+      */}
       <main
-        className="ml-64 flex-1 p-8"
+        className="flex-1 p-6 md:p-8 ml-0 md:ml-64 pt-20 md:pt-8"
         style={{ color: 'var(--color-text-primary)' }}
       >
         {children}
