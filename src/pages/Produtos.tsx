@@ -7,6 +7,7 @@ import type { Produto } from '../types'
 export default function Produtos() {
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [carregando, setCarregando] = useState(true)
+  const [busca, setBusca] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -34,69 +35,196 @@ export default function Produtos() {
     }
   }
 
+  const produtosFiltrados = produtos.filter(produto =>
+    `${produto.nome} ${produto.categoria}`
+      .toLowerCase()
+      .includes(busca.toLowerCase())
+  )
+
   return (
     <Layout>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-white">Produtos</h2>
-          <p className="text-gray-400 mt-1">Gerencie seus produtos</p>
+          <h2 style={{ color: 'var(--color-text-primary)', fontSize: '24px', fontWeight: 'bold' }}>
+            Produtos
+          </h2>
+          <p style={{ color: 'var(--color-text-secondary)', marginTop: '4px', fontSize: '14px' }}>
+            Gerencie seus produtos
+          </p>
         </div>
+
         <button
           onClick={() => navigate('/produtos/novo')}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+          style={{
+            background: 'var(--color-accent)',
+            color: '#fff',
+            padding: '8px 18px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 500,
+            border: 'none',
+            cursor: 'pointer',
+          }}
         >
           + Novo Produto
         </button>
       </div>
 
+      <div style={{ marginBottom: '16px' }}>
+        <input
+          type="text"
+          placeholder="Buscar produto..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          style={{
+            width: '100%',
+            maxWidth: '400px',
+            background: 'var(--color-bg-card)',
+            color: 'var(--color-text-primary)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '8px',
+            padding: '10px 14px',
+            fontSize: '14px',
+            outline: 'none',
+          }}
+        />
+      </div>
+
       {carregando ? (
-        <p className="text-gray-400">Carregando...</p>
+        <p style={{ color: 'var(--color-text-secondary)' }}>Carregando...</p>
       ) : (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-          <table className="w-full">
+        <div
+          style={{
+            background: 'var(--color-bg-card)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '12px',
+            overflow: 'hidden',
+          }}
+        >
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr className="border-b border-gray-800">
-                <th className="text-left text-gray-400 text-sm px-6 py-4">Nome</th>
-                <th className="text-left text-gray-400 text-sm px-6 py-4">Categoria</th>
-                <th className="text-left text-gray-400 text-sm px-6 py-4">Preço</th>
-                <th className="text-left text-gray-400 text-sm px-6 py-4">Estoque</th>
-                <th className="text-left text-gray-400 text-sm px-6 py-4">Ações</th>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                {['Nome', 'Categoria', 'Preço', 'Estoque', 'Ações'].map(col => (
+                  <th
+                    key={col}
+                    style={{
+                      textAlign: 'left',
+                      color: 'var(--color-text-muted)',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      padding: '14px 24px',
+                    }}
+                  >
+                    {col}
+                  </th>
+                ))}
               </tr>
             </thead>
+
             <tbody>
-              {produtos.length === 0 ? (
+              {produtosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center text-gray-400 py-8">
-                    Nenhum produto cadastrado
+                  <td
+                    colSpan={5}
+                    style={{
+                      textAlign: 'center',
+                      color: 'var(--color-text-muted)',
+                      padding: '32px',
+                      fontSize: '14px',
+                    }}
+                  >
+                    Nenhum produto encontrado
                   </td>
                 </tr>
               ) : (
-                produtos.map((produto) => (
-                  <tr key={produto.id} className="border-b border-gray-800 hover:bg-gray-800/50 transition">
-                    <td className="px-6 py-4 text-white text-sm">{produto.nome}</td>
-                    <td className="px-6 py-4 text-gray-400 text-sm">{produto.categoria}</td>
-                    <td className="px-6 py-4 text-gray-400 text-sm">
+                produtosFiltrados.map((produto) => (
+                  <tr
+                    key={produto.id}
+                    style={{
+                      borderBottom: '1px solid var(--color-border)',
+                      transition: 'background 0.15s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <td
+                      style={{
+                        padding: '14px 24px',
+                        color: 'var(--color-text-primary)',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {produto.nome}
+                    </td>
+
+                    <td style={{ padding: '14px 24px', fontSize: '13px' }}>
+                      <span
+                        style={{
+                          background: 'var(--color-bg-secondary)',
+                          color: 'var(--color-text-secondary)',
+                          padding: '3px 10px',
+                          borderRadius: '999px',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          border: '1px solid var(--color-border)',
+                        }}
+                      >
+                        {produto.categoria}
+                      </span>
+                    </td>
+
+                    <td
+                      style={{
+                        padding: '14px 24px',
+                        color: 'var(--color-text-primary)',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                      }}
+                    >
                       R$ {produto.preco.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={produto.estoque > 0 ? 'text-green-400' : 'text-red-400'}>
+
+                    <td style={{ padding: '14px 24px', fontSize: '14px' }}>
+                      <span
+                        style={{
+                          color: produto.estoque > 0 ? '#3a9e6e' : '#e05252',
+                          fontWeight: 500,
+                        }}
+                      >
                         {produto.estoque} unidades
                       </span>
                     </td>
-                    <td className="px-6 py-4 flex gap-4">
-                        <button
-                            onClick={() => navigate(`/produtos/editar/${produto.id}`)}
-                            className="text-blue-400 hover:text-blue-300 text-sm transition"
-                        >
-                            Editar
-                        </button>
-                        <button
-                            onClick={() => deletarProduto(produto.id)}
-                            className="text-red-400 hover:text-red-300 text-sm transition"
-                        >
-                            Deletar
-                        </button>
-                        </td>
+
+                    <td style={{ padding: '14px 24px', display: 'flex', gap: '16px' }}>
+                      <button
+                        onClick={() => navigate(`/produtos/editar/${produto.id}`)}
+                        style={{
+                          color: 'var(--color-accent)',
+                          background: 'none',
+                          border: 'none',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                        }}
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        onClick={() => deletarProduto(produto.id)}
+                        style={{
+                          color: '#e05252',
+                          background: 'none',
+                          border: 'none',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                        }}
+                      >
+                        Deletar
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}

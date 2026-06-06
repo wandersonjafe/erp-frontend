@@ -1,93 +1,170 @@
 import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import api from '../services/api'
-import type { Cliente, Venda } from '../types'
+import {
+  ShoppingCart,
+  FolderOpen,
+  DollarSign,
+  Users,
+  Package,
+} from 'lucide-react'
 
-// ── Helpers
+interface Cliente {
+  id: string
+  nome: string
+}
+
+interface Venda {
+  id: string
+  clienteId: string
+  status: 'ABERTA' | 'FECHADA' | 'CANCELADA'
+  total: number
+}
+
+type FiltroStatus = 'FECHADA' | 'ABERTA' | 'CANCELADA'
+
 function formatarMoeda(valor: number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-function abreviarUUID(id: string) {
-  return id.length > 8 ? `${id.substring(0, 8)}...` : id
+function abreviarId(id: string) {
+  return id.length > 8 ? id.substring(0, 8) + '…' : id
 }
 
-function badgeVenda(status: Venda['status']) {
-  const map = {
-    FECHADA:   { bg: '#14532d', cor: '#86efac', label: 'Fechada'   },
-    ABERTA:    { bg: '#713f12', cor: '#fde68a', label: 'Aberta'    },
-    CANCELADA: { bg: '#7f1d1d', cor: '#fca5a5', label: 'Cancelada' },
-  }
-  const s = map[status] ?? { bg: '#374151', cor: '#9ca3af', label: status }
+interface CardProps {
+  label: string
+  valor: string | number
+  icon: React.ReactNode
+  iconBg: string
+  iconColor: string
+  wide?: boolean
+}
+
+function MetricCard({ label, valor, icon, iconBg, iconColor, wide }: CardProps) {
   return (
-    <span style={{
-      background: s.bg,
-      color: s.cor,
-      fontSize: '11px',
-      fontWeight: 500,
-      padding: '2px 10px',
-      borderRadius: '999px',
-      whiteSpace: 'nowrap',
-    }}>
+    <div
+      style={{
+        background: 'var(--color-bg-card)',
+        border: '1px solid var(--color-border)',
+        borderRadius: '12px',
+        padding: '16px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '14px',
+        flex: wide ? 2 : 1,
+        minWidth: wide ? '210px' : '160px',
+      }}
+    >
+      <div
+        style={{
+          width: '40px',
+          height: '40px',
+          borderRadius: '8px',
+          background: iconBg,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          color: iconColor,
+        }}
+      >
+        {icon}
+      </div>
+      <div>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '12px', margin: '0 0 3px' }}>
+          {label}
+        </p>
+        <p style={{
+          color: 'var(--color-text-primary)',
+          fontSize: wide ? '18px' : '22px',
+          fontWeight: 600,
+          margin: 0,
+          lineHeight: 1,
+        }}>
+          {valor}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+interface BarraStatusProps {
+  label: string
+  count: number
+  total: number
+  cor: string
+  ativo: boolean
+  onClick: () => void
+}
+
+function BarraStatus({ label, count, total, cor, ativo, onClick }: BarraStatusProps) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        marginBottom: '10px',
+        padding: '8px 10px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        border: ativo ? `1px solid ${cor}` : '1px solid transparent',
+        background: ativo ? `${cor}18` : 'transparent',
+        transition: 'all 0.15s ease',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+        <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px', fontWeight: ativo ? 600 : 400 }}>
+          {label}
+        </span>
+        <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
+          {count} ({pct}%)
+        </span>
+      </div>
+      <div style={{ background: 'var(--color-border)', borderRadius: '4px', height: '5px' }}>
+        <div
+          style={{
+            width: `${pct}%`,
+            background: cor,
+            height: '5px',
+            borderRadius: '4px',
+            transition: 'width 0.5s ease',
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function BadgeStatus({ status }: { status: Venda['status'] }) {
+  const map = {
+    FECHADA:   { bg: 'rgba(34,197,94,0.12)',  color: '#16a34a', label: 'Fechada'   },
+    ABERTA:    { bg: 'rgba(234,179,8,0.12)',   color: '#ca8a04', label: 'Aberta'    },
+    CANCELADA: { bg: 'rgba(239,68,68,0.12)',   color: '#dc2626', label: 'Cancelada' },
+  }
+  const s = map[status]
+  return (
+    <span
+      style={{
+        background: s.bg,
+        color: s.color,
+        fontSize: '11px',
+        fontWeight: 500,
+        padding: '2px 8px',
+        borderRadius: '999px',
+        whiteSpace: 'nowrap',
+      }}
+    >
       {s.label}
     </span>
   )
 }
 
-// ── Card de métrica
-interface CardProps {
-  label: string
-  valor: string | number
-  sub?: string
-  borda: string
-  fundo: string
-}
-
-function MetricCard({ label, valor, sub, borda, fundo }: CardProps) {
-  return (
-    <div style={{
-      background: fundo,
-      border: `1px solid ${borda}`,
-      borderRadius: '12px',
-      padding: '20px 24px',
-      flex: 1,
-      minWidth: '140px',
-    }}>
-      <p style={{ color: '#9ca3af', fontSize: '13px', marginBottom: '6px' }}>{label}</p>
-      <p style={{ color: 'white', fontSize: '28px', fontWeight: 'bold', lineHeight: 1 }}>{valor}</p>
-      {sub && <p style={{ color: '#6b7280', fontSize: '12px', marginTop: '6px' }}>{sub}</p>}
-    </div>
-  )
-}
-
-// ── Barra de progresso por status 
-function BarraStatus({ label, count, total, cor }: { label: string; count: number; total: number; cor: string }) {
-  const pct = total > 0 ? Math.round((count / total) * 100) : 0
-  return (
-    <div style={{ marginBottom: '10px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-        <span style={{ color: '#9ca3af', fontSize: '12px' }}>{label}</span>
-        <span style={{ color: '#6b7280', fontSize: '12px' }}>{count} ({pct}%)</span>
-      </div>
-      <div style={{ background: '#1f2937', borderRadius: '4px', height: '6px' }}>
-        <div style={{
-          width: `${pct}%`,
-          background: cor,
-          height: '6px',
-          borderRadius: '4px',
-          transition: 'width 0.6s ease',
-        }} />
-      </div>
-    </div>
-  )
-}
-
-// ── Componente principal 
 export default function Dashboard() {
-  const [clientes, setClientes]     = useState<Cliente[]>([])
-  const [totalProdutos, setTotalProdutos] = useState(0)
-  const [vendas, setVendas]         = useState<Venda[]>([])
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [produtos, setProdutos] = useState<unknown[]>([])
+  const [vendas, setVendas]     = useState<Venda[]>([])
   const [carregando, setCarregando] = useState(true)
+  const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>('FECHADA')
 
   useEffect(() => {
     async function carregarDados() {
@@ -98,10 +175,10 @@ export default function Dashboard() {
           api.get('/vendas'),
         ])
         setClientes(resClientes.data)
-        setTotalProdutos(resProdutos.data.length)
+        setProdutos(resProdutos.data)
         setVendas(resVendas.data)
       } catch (error) {
-        console.error('Erro ao carregar dados do dashboard:', error)
+        console.error('Erro ao carregar dashboard:', error)
       } finally {
         setCarregando(false)
       }
@@ -109,151 +186,128 @@ export default function Dashboard() {
     carregarDados()
   }, [])
 
-  // ── Métricas derivadas 
   const totalVendas = vendas.length
   const fechadas    = vendas.filter(v => v.status === 'FECHADA').length
   const abertas     = vendas.filter(v => v.status === 'ABERTA').length
   const canceladas  = vendas.filter(v => v.status === 'CANCELADA').length
+  const valorTotal  = vendas
+    .filter(v => v.status === 'FECHADA')
+    .reduce((acc, v) => acc + (Number(v.total) || 0), 0)
 
- const valorTotal = vendas
-  .filter(v => v.status === 'FECHADA')
-  .reduce((acc, v) => acc + (Number(v.total) || 0), 0)
-
-  const vendasRecentes = [...vendas]
-    .sort((a, b) => String(b.id).localeCompare(String(a.id)))
+  const vendasFiltradas = [...vendas]
+    .filter(v => v.status === filtroStatus)
+    .sort((a, b) => b.id.localeCompare(a.id))
     .slice(0, 5)
 
-  // ── Cruza clienteId com a lista de clientes para obter o nome
-  function nomeCliente(clienteId: string) {
-    const cliente = clientes.find(c => c.id === clienteId)
-    return cliente ? cliente.nome : `Cliente ${abreviarUUID(clienteId)}`
+  const tituloTabela: Record<FiltroStatus, string> = {
+    FECHADA:   'Vendas fechadas',
+    ABERTA:    'Vendas abertas',
+    CANCELADA: 'Vendas canceladas',
   }
 
-  // ── Loading
+  function nomeCliente(clienteId: string) {
+    return clientes.find(c => c.id === clienteId)?.nome ?? abreviarId(clienteId)
+  }
+
   if (carregando) {
     return (
       <Layout>
-        <p style={{ color: '#9ca3af' }}>Carregando dashboard...</p>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>
+          Carregando dashboard...
+        </p>
       </Layout>
     )
   }
 
-  // ── Render 
   return (
     <Layout>
       <div>
-
-        {/* Cabeçalho */}
-        <h2 style={{ color: 'white', fontSize: '24px', marginBottom: '4px', fontWeight: 'bold' }}>
+        <h2 style={{ color: 'var(--color-text-primary)', fontSize: '22px', fontWeight: 600, margin: '0 0 4px' }}>
           Dashboard
         </h2>
-        <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', margin: '0 0 24px' }}>
           Visão geral do sistema
         </p>
 
-        {/* ── Linha 1: Cards de métricas ── */}
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
-          <MetricCard
-            label="Total de vendas"
-            valor={totalVendas}
-            sub="no sistema"
-            borda="#3b82f6"
-            fundo="#1e3a5f"
-          />
-          <MetricCard
-            label="Valor total vendido"
-            valor={formatarMoeda(valorTotal)}
-            sub="vendas fechadas"
-            borda="#10b981"
-            fundo="#064e3b"
-          />
-          <MetricCard
-            label="Clientes"
-            valor={clientes.length}
-            sub="cadastrados"
-            borda="#a855f7"
-            fundo="#2e1f5e"
-          />
-          <MetricCard
-            label="Produtos"
-            valor={totalProdutos}
-            sub="no catálogo"
-            borda="#f59e0b"
-            fundo="#451a03"
-          />
+        {/* Cards de métricas */}
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
+          <MetricCard label="Vendas"       valor={totalVendas}           icon={<ShoppingCart size={20} />} iconBg="rgba(59,130,246,0.12)"  iconColor="#2563eb" />
+          <MetricCard label="Valor vendido" valor={formatarMoeda(valorTotal)} icon={<DollarSign size={20} />}  iconBg="rgba(34,197,94,0.12)"   iconColor="#16a34a" wide />
+          <MetricCard label="Em aberto"    valor={abertas}               icon={<FolderOpen size={20} />}   iconBg="rgba(234,179,8,0.12)"   iconColor="#ca8a04" />
+          <MetricCard label="Clientes"     valor={clientes.length}       icon={<Users size={20} />}        iconBg="rgba(139,92,246,0.12)"  iconColor="#7c3aed" />
+          <MetricCard label="Produtos"     valor={produtos.length}       icon={<Package size={20} />}      iconBg="rgba(249,115,22,0.12)"  iconColor="#ea580c" />
         </div>
 
-        {/* ── Linha 2: Status + Vendas recentes ── */}
+        {/* Status + Tabela */}
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
 
-          {/* Status das vendas */}
+          {/* Painel de status */}
           <div style={{
-            background: '#111827',
-            border: '1px solid #1f2937',
+            background: 'var(--color-bg-card)',
+            border: '1px solid var(--color-border)',
             borderRadius: '12px',
-            padding: '20px 24px',
+            padding: '20px',
             flex: 1,
-            minWidth: '220px',
+            minWidth: '200px',
           }}>
-            <p style={{ color: '#9ca3af', fontSize: '13px', marginBottom: '16px', fontWeight: 500 }}>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', fontWeight: 500, margin: '0 0 4px' }}>
               Status das vendas
             </p>
-            <BarraStatus label="Fechadas"   count={fechadas}   total={totalVendas} cor="#10b981" />
-            <BarraStatus label="Abertas"    count={abertas}    total={totalVendas} cor="#f59e0b" />
-            <BarraStatus label="Canceladas" count={canceladas} total={totalVendas} cor="#ef4444" />
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '11px', margin: '0 0 12px' }}>
+              Clique para filtrar
+            </p>
+            <BarraStatus label="Fechadas"   count={fechadas}   total={totalVendas} cor="#16a34a" ativo={filtroStatus === 'FECHADA'}   onClick={() => setFiltroStatus('FECHADA')}   />
+            <BarraStatus label="Abertas"    count={abertas}    total={totalVendas} cor="#ca8a04" ativo={filtroStatus === 'ABERTA'}    onClick={() => setFiltroStatus('ABERTA')}    />
+            <BarraStatus label="Canceladas" count={canceladas} total={totalVendas} cor="#dc2626" ativo={filtroStatus === 'CANCELADA'} onClick={() => setFiltroStatus('CANCELADA')} />
           </div>
 
-          {/* Vendas recentes */}
+          {/* Tabela filtrada */}
           <div style={{
-            background: '#111827',
-            border: '1px solid #1f2937',
+            background: 'var(--color-bg-card)',
+            border: '1px solid var(--color-border)',
             borderRadius: '12px',
-            padding: '20px 24px',
+            padding: '20px',
             flex: 2,
-            minWidth: '300px',
-            overflowX: 'auto',
+            minWidth: '280px',
           }}>
-            <p style={{ color: '#9ca3af', fontSize: '13px', marginBottom: '14px', fontWeight: 500 }}>
-              Vendas recentes
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', fontWeight: 500, margin: '0 0 14px' }}>
+              {tituloTabela[filtroStatus]}
             </p>
 
-            {vendasRecentes.length === 0 ? (
-              <p style={{ color: '#4b5563', fontSize: '13px' }}>Nenhuma venda registrada.</p>
+            {vendasFiltradas.length === 0 ? (
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px' }}>
+                Nenhuma venda com este status.
+              </p>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: '90px' }} />
+                  <col />
+                  <col style={{ width: '110px' }} />
+                  <col style={{ width: '90px' }} />
+                </colgroup>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #1f2937' }}>
-                    {['ID', 'Cliente', 'Valor', 'Status'].map(col => (
-                      <th key={col} style={{
-                        color: '#4b5563',
-                        fontWeight: 500,
-                        fontSize: '11px',
-                        textAlign: col === 'Valor' || col === 'Status' ? 'right' : 'left',
-                        paddingBottom: '8px',
-                      }}>
-                        {col}
-                      </th>
-                    ))}
+                  <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <th style={{ color: 'var(--color-text-muted)', fontWeight: 500, fontSize: '11px', textAlign: 'left',  padding: '0 0 8px 0' }}>#</th>
+                    <th style={{ color: 'var(--color-text-muted)', fontWeight: 500, fontSize: '11px', textAlign: 'left',  padding: '0 0 8px 0' }}>Cliente</th>
+                    <th style={{ color: 'var(--color-text-muted)', fontWeight: 500, fontSize: '11px', textAlign: 'right', padding: '0 0 8px 0' }}>Valor</th>
+                    <th style={{ color: 'var(--color-text-muted)', fontWeight: 500, fontSize: '11px', textAlign: 'right', padding: '0 0 8px 0' }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {vendasRecentes.map(v => (
-                    <tr key={v.id} style={{ borderBottom: '1px solid #1f2937' }}>
-                      {/* ID abreviado */}
-                      <td style={{ color: '#4b5563', padding: '10px 0', width: '80px', fontFamily: 'monospace', fontSize: '11px' }}>
-                        {abreviarUUID(String(v.id))}
+                  {vendasFiltradas.map(v => (
+                    <tr key={v.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                      <td style={{ color: 'var(--color-text-muted)', padding: '9px 0', fontFamily: 'monospace', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {abreviarId(v.id)}
                       </td>
-                      {/* Nome do cliente cruzado com a lista */}
-                      <td style={{ color: '#e5e7eb', paddingRight: '12px' }}>
+                      <td style={{ color: 'var(--color-text-primary)', padding: '9px 8px 9px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {nomeCliente(v.clienteId)}
                       </td>
-                      {/* Valor total — Number() garante que BigDecimal string funcione */}
-                      <td style={{ color: '#e5e7eb', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <td style={{ color: 'var(--color-text-primary)', textAlign: 'right', fontWeight: 500, padding: '9px 0', whiteSpace: 'nowrap' }}>
                         {formatarMoeda(Number(v.total) || 0)}
                       </td>
-                      {/* Badge de status */}
-                      <td style={{ textAlign: 'right', paddingLeft: '12px' }}>
-                        {badgeVenda(v.status)}
+                      <td style={{ textAlign: 'right', padding: '9px 0' }}>
+                        <BadgeStatus status={v.status} />
                       </td>
                     </tr>
                   ))}
@@ -261,7 +315,6 @@ export default function Dashboard() {
               </table>
             )}
           </div>
-
         </div>
       </div>
     </Layout>

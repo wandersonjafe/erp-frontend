@@ -6,7 +6,7 @@ import api from '../services/api'
 export default function ClienteForm() {
   const navigate = useNavigate()
   const [carregando, setCarregando] = useState(false)
-  const [erro, setErro] = useState('')
+  const [erro, setErro] = useState<string | null>(null)
 
   const [form, setForm] = useState({
     nome: '',
@@ -21,154 +21,249 @@ export default function ClienteForm() {
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value })
+    setErro(null)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setErro('')
     setCarregando(true)
-
+    setErro(null)
     try {
       await api.post('/clientes', form)
       navigate('/clientes')
     } catch (error) {
-      const mensagem = (error as { mensagemAmigavel?: string }).mensagemAmigavel
-        ?? 'Erro ao cadastrar cliente. Verifique os dados.'
+      const mensagem =
+        (error as { mensagemAmigavel?: string }).mensagemAmigavel ??
+        'Erro ao cadastrar cliente. Verifique os dados.'
       setErro(mensagem)
     } finally {
       setCarregando(false)
     }
   }
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    background: 'var(--color-bg-input)',
+    color: 'var(--color-text-primary)',
+    border: '1px solid var(--color-border)',
+    borderRadius: '8px',
+    padding: '10px 14px',
+    fontSize: '14px',
+    outline: 'none',
+    boxSizing: 'border-box',
+    transition: 'border-color 0.2s',
+  }
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block',
+    fontSize: '13px',
+    fontWeight: 500,
+    color: 'var(--color-text-secondary)',
+    marginBottom: '6px',
+  }
+
+  const fieldStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+  }
+
   return (
     <Layout>
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white">Novo Cliente</h2>
-        <p className="text-gray-400 mt-1">Preencha os dados do cliente</p>
-      </div>
+      <div style={{ maxWidth: '640px' }}>
+        {/* Cabeçalho */}
+        <div style={{ marginBottom: '24px' }}>
+          <button
+            onClick={() => navigate('/clientes')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--color-accent)',
+              cursor: 'pointer',
+              fontSize: '13px',
+              padding: 0,
+              marginBottom: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            ← Voltar para Clientes
+          </button>
+          <h2 style={{ color: 'var(--color-text-primary)', fontSize: '22px', fontWeight: 700, margin: 0 }}>
+            Novo Cliente
+          </h2>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginTop: '4px' }}>
+            Preencha os dados para cadastrar um novo cliente
+          </p>
+        </div>
 
-      <div className="bg-gray-900 rounded-xl border border-gray-800 p-8 max-w-2xl">
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Card do formulário */}
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            background: 'var(--color-bg-card)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '12px',
+            padding: '28px',
+          }}
+        >
+          {/* Seção: Dados pessoais */}
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '16px' }}>
+            Dados Pessoais
+          </p>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Nome</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+            <div style={{ ...fieldStyle, gridColumn: '1 / -1' }}>
+              <label style={labelStyle}>Nome completo *</label>
               <input
+                style={inputStyle}
                 name="nome"
                 value={form.nome}
                 onChange={handleChange}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none border border-gray-700 focus:border-blue-500 transition text-sm"
-                placeholder="Nome completo"
+                placeholder="Ex: Maria da Silva"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Email</label>
+            <div style={fieldStyle}>
+              <label style={labelStyle}>E-mail *</label>
               <input
+                style={inputStyle}
                 name="email"
                 type="email"
                 value={form.email}
                 onChange={handleChange}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none border border-gray-700 focus:border-blue-500 transition text-sm"
                 placeholder="email@exemplo.com"
                 required
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">CPF</label>
-            <input
-              name="cpf"
-              value={form.cpf}
-              onChange={handleChange}
-              className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none border border-gray-700 focus:border-blue-500 transition text-sm"
-              placeholder="000.000.000-00"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2">
-              <label className="block text-sm text-gray-400 mb-1">Logradouro</label>
+            <div style={fieldStyle}>
+              <label style={labelStyle}>CPF *</label>
               <input
+                style={inputStyle}
+                name="cpf"
+                value={form.cpf}
+                onChange={handleChange}
+                placeholder="000.000.000-00"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Divisor */}
+          <div style={{ height: '1px', background: 'var(--color-border)', margin: '20px 0' }} />
+
+          {/* Seção: Endereço */}
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '16px' }}>
+            Endereço
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+            <div style={{ ...fieldStyle, gridColumn: '1 / -1' }}>
+              <label style={labelStyle}>Logradouro</label>
+              <input
+                style={inputStyle}
                 name="logradouro"
                 value={form.logradouro}
                 onChange={handleChange}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none border border-gray-700 focus:border-blue-500 transition text-sm"
-                placeholder="Rua, Avenida..."
-                required
+                placeholder="Rua, Avenida, etc."
               />
             </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Número</label>
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Número</label>
               <input
+                style={inputStyle}
                 name="numero"
                 value={form.numero}
                 onChange={handleChange}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none border border-gray-700 focus:border-blue-500 transition text-sm"
                 placeholder="123"
-                required
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">CEP</label>
+            <div style={fieldStyle}>
+              <label style={labelStyle}>CEP</label>
               <input
+                style={inputStyle}
                 name="cep"
                 value={form.cep}
                 onChange={handleChange}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none border border-gray-700 focus:border-blue-500 transition text-sm"
                 placeholder="00000-000"
-                required
               />
             </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Cidade</label>
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Cidade</label>
               <input
+                style={inputStyle}
                 name="cidade"
                 value={form.cidade}
                 onChange={handleChange}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none border border-gray-700 focus:border-blue-500 transition text-sm"
-                placeholder="Cidade"
-                required
+                placeholder="São Paulo"
               />
             </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Estado</label>
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Estado</label>
               <input
+                style={inputStyle}
                 name="estado"
                 value={form.estado}
                 onChange={handleChange}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none border border-gray-700 focus:border-blue-500 transition text-sm"
                 placeholder="SP"
                 maxLength={2}
-                required
               />
             </div>
           </div>
 
-          {erro && <p className="text-red-400 text-sm">{erro}</p>}
+          {/* Erro */}
+          {erro && (
+            <div style={{
+              background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              borderRadius: '8px',
+              padding: '10px 14px',
+              color: '#ef4444',
+              fontSize: '13px',
+              marginBottom: '20px',
+            }}>
+              {erro}
+            </div>
+          )}
 
-          <div className="flex gap-4 pt-2">
+          {/* Botões */}
+          <div style={{ display: 'flex', gap: '12px' }}>
             <button
               type="button"
               onClick={() => navigate('/clientes')}
-              className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-3 rounded-lg text-sm font-medium transition"
+              style={{
+                flex: 1,
+                padding: '11px',
+                background: 'transparent',
+                border: '1px solid var(--color-border)',
+                borderRadius: '8px',
+                color: 'var(--color-text-secondary)',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={carregando}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-sm font-medium transition disabled:opacity-50"
+              style={{
+                flex: 1,
+                padding: '11px',
+                background: 'var(--color-accent)',
+                border: 'none',
+                borderRadius: '8px',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: carregando ? 'not-allowed' : 'pointer',
+                opacity: carregando ? 0.7 : 1,
+              }}
             >
-              {carregando ? 'Salvando...' : 'Salvar Cliente'}
+              {carregando ? 'Salvando...' : 'Cadastrar Cliente'}
             </button>
           </div>
-
         </form>
       </div>
     </Layout>

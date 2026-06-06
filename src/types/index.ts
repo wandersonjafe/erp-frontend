@@ -42,6 +42,9 @@ export interface Venda  {
     clienteId: string
     status: 'ABERTA' | 'FECHADA' | 'CANCELADA'
     total: number 
+    dataCriacao: string | null
+    dataFechamento: string | null
+    dataCancelamento: string | null
 }
 
 export interface AdicionarItemRequest {
