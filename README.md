@@ -13,7 +13,7 @@ Interface web do ERP desenvolvida com **React + TypeScript + Vite**, consumindo 
 - **Tailwind CSS** — estilização utilitária
 - **Axios** — requisições HTTP com interceptors de JWT
 - **React Router v6** — roteamento com rotas protegidas
-- **React Query** — gerenciamento de estado assíncrono
+- **Lucide React** — ícones SVG
 
 ---
 
@@ -23,10 +23,11 @@ Interface web do ERP desenvolvida com **React + TypeScript + Vite**, consumindo 
 src/
 ├── components/
 │   ├── Layout.tsx        → estrutura base das páginas autenticadas
-│   ├── Sidebar.tsx       → menu lateral de navegação
+│   ├── Sidebar.tsx       → menu lateral com ícones e navegação
 │   └── PrivateRoute.tsx  → proteção de rotas autenticadas
 ├── context/
-│   └── AuthContext.tsx   → contexto global de autenticação
+│   ├── AuthContext.tsx   → contexto global de autenticação
+│   └── ThemeContext.tsx  → contexto de tema claro/escuro
 ├── pages/
 │   ├── Login.tsx
 │   ├── Dashboard.tsx
@@ -44,7 +45,7 @@ src/
 
 ---
 
-##  Funcionalidades
+## 📦 Funcionalidades
 
 ### Autenticação
 - Login com e-mail e senha
@@ -52,10 +53,14 @@ src/
 - Redirecionamento automático para `/login` em token expirado (401)
 - Rotas protegidas com `PrivateRoute`
 
+### Tema
+- Alternância entre modo claro e escuro
+- Paleta baseada em variáveis CSS — todas as páginas respondem automaticamente ao tema
+
 ### Dashboard
-- Cards com total de vendas, valor total vendido, clientes e produtos
-- Barras de progresso por status de venda (Abertas, Fechadas, Canceladas)
-- Tabela de vendas recentes com nome do cliente, valor e status
+- Cards com total de vendas, valor vendido, vendas em aberto, clientes e produtos
+- Barras de status clicáveis — ao clicar em Fechadas, Abertas ou Canceladas, a tabela ao lado filtra automaticamente
+- Tabela de vendas filtrada por status com nome do cliente, valor e badge de status
 
 ### Clientes
 - Listagem, cadastro, edição e exclusão
@@ -63,12 +68,16 @@ src/
 
 ### Produtos
 - Listagem, cadastro, edição e exclusão
-- Exibição de estoque e categoria
+- Exibição de estoque e categoria com badges visuais
 
 ### Vendas
-- Fluxo guiado em etapas: Abrir → Adicionar itens → Fechar
-- Cancelamento de vendas abertas
+- Abertura de venda com seleção de cliente
+- Carrinho visual em tempo real — produtos adicionados aparecem na tabela com subtotal e total
+- Botões de ação fixos: **Fechar Venda** e **Cancelar Venda**
 - Histórico com filtros por status: Todas, Abertas, Fechadas, Canceladas
+- Busca por nome do cliente ou ID da venda
+- Linhas expansíveis no histórico — clique para ver os itens de cada venda
+- Vendas abertas com botão **Continuar** para retomar o carrinho e botão **✕** para cancelar direto pelo histórico
 
 ---
 
@@ -88,13 +97,6 @@ npm run dev
 ```
 
 A aplicação estará disponível em `http://localhost:5173`
-
-### Com Docker
-
-```bash
-docker build -t erp-frontend .
-docker run -p 80:80 erp-frontend
-```
 
 ---
 
