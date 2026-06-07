@@ -5,6 +5,26 @@ import api from '../services/api'
 
 const categorias = ['ELETRONICO', 'ALIMENTO', 'VESTUARIO', 'MOVEL', 'OUTROS']
 
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  background: 'var(--color-bg-secondary)',
+  color: 'var(--color-text-primary)',
+  border: '1px solid var(--color-border)',
+  borderRadius: '8px',
+  padding: '10px 14px',
+  fontSize: '14px',
+  outline: 'none',
+  boxSizing: 'border-box',
+}
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '13px',
+  color: 'var(--color-text-secondary)',
+  marginBottom: '6px',
+  fontWeight: 500,
+}
+
 export default function ProdutoEditar() {
   const navigate = useNavigate()
   const { id } = useParams()
@@ -48,7 +68,6 @@ export default function ProdutoEditar() {
     e.preventDefault()
     setErro('')
     setCarregando(true)
-
     try {
       await api.put(`/produtos/${id}`, {
         ...form,
@@ -67,95 +86,82 @@ export default function ProdutoEditar() {
 
   return (
     <Layout>
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white">Editar Produto</h2>
-        <p className="text-gray-400 mt-1">Atualize os dados do produto</p>
+      <div style={{ marginBottom: '28px' }}>
+        <h2 style={{ color: 'var(--color-text-primary)', fontSize: '24px', fontWeight: 'bold' }}>Editar Produto</h2>
+        <p style={{ color: 'var(--color-text-secondary)', marginTop: '4px', fontSize: '14px' }}>Atualize os dados do produto</p>
       </div>
 
-      <div className="bg-gray-900 rounded-xl border border-gray-800 p-8 max-w-2xl">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div style={{
+        background: 'var(--color-bg-card)',
+        border: '1px solid var(--color-border)',
+        borderRadius: '12px',
+        padding: '28px',
+        maxWidth: '640px',
+      }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Nome</label>
-            <input
-              name="nome"
-              value={form.nome}
-              onChange={handleChange}
-              className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none border border-gray-700 focus:border-blue-500 transition text-sm"
-              placeholder="Nome do produto"
-              required
-            />
+            <label style={labelStyle}>Nome</label>
+            <input name="nome" value={form.nome} onChange={handleChange}
+              style={inputStyle} placeholder="Nome do produto" required />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Descrição</label>
-            <textarea
-              name="descricao"
-              value={form.descricao}
-              onChange={handleChange}
-              className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none border border-gray-700 focus:border-blue-500 transition text-sm resize-none"
-              placeholder="Descrição do produto"
-              rows={3}
-            />
+            <label style={labelStyle}>Descrição</label>
+            <textarea name="descricao" value={form.descricao} onChange={handleChange}
+              style={{ ...inputStyle, resize: 'none' }} placeholder="Descrição do produto" rows={3} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Preço</label>
-              <input
-                name="preco"
-                type="number"
-                step="0.01"
-                value={form.preco}
-                onChange={handleChange}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none border border-gray-700 focus:border-blue-500 transition text-sm"
-                placeholder="0.00"
-                required
-              />
+              <label style={labelStyle}>Preço</label>
+              <input name="preco" type="number" step="0.01" value={form.preco} onChange={handleChange}
+                style={inputStyle} placeholder="0.00" required />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Estoque</label>
-              <input
-                name="estoque"
-                type="number"
-                value={form.estoque}
-                onChange={handleChange}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none border border-gray-700 focus:border-blue-500 transition text-sm"
-                placeholder="0"
-                required
-              />
+              <label style={labelStyle}>Estoque</label>
+              <input name="estoque" type="number" value={form.estoque} onChange={handleChange}
+                style={inputStyle} placeholder="0" required />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Categoria</label>
-            <select
-              name="categoria"
-              value={form.categoria}
-              onChange={handleChange}
-              className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none border border-gray-700 focus:border-blue-500 transition text-sm"
-            >
-              {categorias.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
+            <label style={labelStyle}>Categoria</label>
+            <select name="categoria" value={form.categoria} onChange={handleChange} style={inputStyle}>
+              {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
             </select>
           </div>
 
-          {erro && <p className="text-red-400 text-sm">{erro}</p>}
+          {erro && (
+            <p style={{ color: '#e05252', fontSize: '13px', marginTop: '-4px' }}>{erro}</p>
+          )}
 
-          <div className="flex gap-4 pt-2">
-            <button
-              type="button"
-              onClick={() => navigate('/produtos')}
-              className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-3 rounded-lg text-sm font-medium transition"
-            >
+          <div style={{ display: 'flex', gap: '12px', paddingTop: '8px' }}>
+            <button type="button" onClick={() => navigate('/produtos')} style={{
+              flex: 1,
+              background: 'var(--color-bg-secondary)',
+              color: 'var(--color-text-primary)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '8px',
+              padding: '12px',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}>
               Cancelar
             </button>
-            <button
-              type="submit"
-              disabled={carregando}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-sm font-medium transition disabled:opacity-50"
-            >
+            <button type="submit" disabled={carregando} style={{
+              flex: 1,
+              background: 'var(--color-accent)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '12px',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              opacity: carregando ? 0.6 : 1,
+            }}>
               {carregando ? 'Salvando...' : 'Salvar Alterações'}
             </button>
           </div>
