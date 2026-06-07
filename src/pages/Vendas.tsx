@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
 import api from '../services/api'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { Cliente, Produto, Venda } from '../types'
 
 type FiltroStatus = 'TODAS' | 'ABERTA' | 'FECHADA' | 'CANCELADA'
@@ -29,19 +30,20 @@ function abreviarUUID(uuid: string) {
   return uuid.length > 8 ? `${uuid.substring(0, 8)}...` : uuid
 }
 
-// Retorna a data mais relevante conforme o status da venda
 function dataRelevante(venda: Venda): string {
   const data =
     venda.status === 'FECHADA'   ? venda.dataFechamento :
     venda.status === 'CANCELADA' ? venda.dataCancelamento :
                                    venda.dataCriacao
-
   if (!data) return '—'
-
   return new Date(data).toLocaleDateString('pt-BR', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
+}
+
+function formatarMoeda(valor: number) {
+  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 export default function Vendas() {
@@ -59,6 +61,7 @@ export default function Vendas() {
   const [mensagem, setMensagem]     = useState('')
   const [filtroAtivo, setFiltroAtivo] = useState<FiltroStatus>('TODAS')
   const [busca, setBusca]           = useState('')
+  const [vendaExpandida, setVendaExpandida] = useState<string | null>(null)
 
   function nomeCliente(id: string) {
     return clientes.find(c => c.id === id)?.nome ?? id
@@ -72,6 +75,12 @@ export default function Vendas() {
     return atendeStatus && atendeBusca
   })
 
+  function toggleExpansao(e: React.MouseEvent, id: string) {
+    e.preventDefault()
+    e.stopPropagation()
+    setVendaExpandida(prev => prev === id ? null : id)
+  }
+
   useEffect(() => {
     async function carregarDados() {
       try {
@@ -84,8 +93,7 @@ export default function Vendas() {
         setProdutos(resProdutos.data)
         setVendas(resVendas.data)
       } catch (error) {
-        const mensagemErro = (error as { mensagemAmigavel?: string }).mensagemAmigavel ?? 'Erro ao carregar dados.'
-        console.error(mensagemErro)
+        console.error((error as { mensagemAmigavel?: string }).mensagemAmigavel ?? error)
       }
     }
     carregarDados()
@@ -145,7 +153,6 @@ export default function Vendas() {
     } finally { setCarregando(false) }
   }
 
-  // ── Estilos reutilizáveis ────────────────────────────────────────────────
   const cardStyle: React.CSSProperties = {
     background: 'var(--color-bg-card)',
     border: '1px solid var(--color-border)',
@@ -198,22 +205,16 @@ export default function Vendas() {
 
   return (
     <Layout>
-      {/* Cabeçalho */}
       <div style={{ marginBottom: '24px' }}>
         <h2 style={{ color: 'var(--color-text-primary)', fontSize: '24px', fontWeight: 'bold' }}>Vendas</h2>
         <p style={{ color: 'var(--color-text-secondary)', marginTop: '4px', fontSize: '14px' }}>Gerencie suas vendas</p>
       </div>
 
-      {/* Abas */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
         {(['nova', 'historico'] as const).map(a => (
           <button key={a} onClick={() => setAba(a)} style={{
-            padding: '8px 18px',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: 500,
-            cursor: 'pointer',
-            border: '1px solid var(--color-border)',
+            padding: '8px 18px', borderRadius: '8px', fontSize: '14px',
+            fontWeight: 500, cursor: 'pointer', border: '1px solid var(--color-border)',
             ...(aba === a
               ? { background: 'var(--color-accent)', color: '#fff', borderColor: 'var(--color-accent)' }
               : { background: 'var(--color-bg-secondary)', color: 'var(--color-text-secondary)' }),
@@ -226,11 +227,10 @@ export default function Vendas() {
       {/* ── Aba Nova Venda ── */}
       {aba === 'nova' && (
         <div style={{ maxWidth: '560px' }}>
-          {/* Stepper */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '28px' }}>
             {(['abrir', 'itens', 'finalizada'] as const).map((e, i) => {
-              const etapas  = ['abrir', 'itens', 'finalizada']
-              const ativo   = etapa === e
+              const etapas = ['abrir', 'itens', 'finalizada']
+              const ativo  = etapa === e
               const passado = etapas.indexOf(etapa) > i
               return (
                 <div key={e} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -241,9 +241,7 @@ export default function Vendas() {
                     background: ativo ? 'var(--color-accent)' : passado ? '#3a9e6e' : 'var(--color-bg-secondary)',
                     color: ativo || passado ? '#fff' : 'var(--color-text-muted)',
                     border: '1px solid var(--color-border)',
-                  }}>
-                    {i + 1}
-                  </div>
+                  }}>{i + 1}</div>
                   <span style={{ fontSize: '13px', color: ativo ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}>
                     {e === 'abrir' ? 'Abrir' : e === 'itens' ? 'Itens' : 'Finalizar'}
                   </span>
@@ -254,7 +252,6 @@ export default function Vendas() {
           </div>
 
           <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
             {etapa === 'abrir' && (
               <>
                 <div>
@@ -349,12 +346,8 @@ export default function Vendas() {
               const ativo = filtroAtivo === valor
               return (
                 <button key={valor} onClick={() => setFiltroAtivo(valor)} style={{
-                  padding: '6px 14px',
-                  borderRadius: '999px',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  border: '1px solid var(--color-border)',
+                  padding: '6px 14px', borderRadius: '999px', fontSize: '12px',
+                  fontWeight: 500, cursor: 'pointer', border: '1px solid var(--color-border)',
                   transition: 'all 0.15s',
                   ...(ativo
                     ? filtroAtivoBg(valor)
@@ -377,15 +370,12 @@ export default function Vendas() {
               value={busca}
               onChange={e => setBusca(e.target.value)}
               style={{
-                width: '100%',
-                maxWidth: '400px',
+                width: '100%', maxWidth: '400px',
                 background: 'var(--color-bg-secondary)',
                 color: 'var(--color-text-primary)',
                 border: '1px solid var(--color-border)',
-                borderRadius: '8px',
-                padding: '10px 14px',
-                fontSize: '14px',
-                outline: 'none',
+                borderRadius: '8px', padding: '10px 14px',
+                fontSize: '14px', outline: 'none',
               }}
             />
           </div>
@@ -400,19 +390,12 @@ export default function Vendas() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                  {[
-                    ['ID da Venda', '140px'],
-                    ['Cliente',     ''      ],
-                    ['Status',      '110px' ],
-                    ['Total',       '110px' ],
-                    ['Data',        '160px' ],
-                  ].map(([col, w]) => (
+                  <th style={{ width: '40px', padding: '14px 0 14px 16px' }} />
+                  {[['ID da Venda', '140px'], ['Cliente', ''], ['Status', '110px'], ['Total', '110px'], ['Data', '160px']].map(([col, w]) => (
                     <th key={col} style={{
-                      textAlign: 'left',
-                      color: 'var(--color-text-muted)',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                      padding: '14px 24px',
+                      textAlign: 'left', color: 'var(--color-text-muted)',
+                      fontSize: '13px', fontWeight: 500,
+                      padding: '14px 24px 14px 0',
                       width: w || undefined,
                     }}>
                       {col}
@@ -423,51 +406,109 @@ export default function Vendas() {
               <tbody>
                 {vendasFiltradas.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '32px', fontSize: '14px' }}>
+                    <td colSpan={6} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '32px', fontSize: '14px' }}>
                       Nenhuma venda {filtroAtivo !== 'TODAS' ? `com status ${filtroAtivo.toLowerCase()}` : 'registrada'}
                     </td>
                   </tr>
                 ) : (
-                  vendasFiltradas.map(venda => (
-                    <tr key={venda.id}
-                      style={{ borderBottom: '1px solid var(--color-border)', transition: 'background 0.15s' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <td title={venda.id} style={{
-                        padding: '14px 24px',
-                        color: 'var(--color-text-muted)',
-                        fontSize: '12px',
-                        fontFamily: 'monospace',
-                        cursor: 'default',
-                      }}>
-                        {abreviarUUID(venda.id)}
-                      </td>
-                      <td style={{ padding: '14px 24px', color: 'var(--color-text-primary)', fontSize: '14px', fontWeight: 500 }}>
-                        {nomeCliente(venda.clienteId)}
-                      </td>
-                      <td style={{ padding: '14px 24px' }}>
-                        <span style={{
-                          fontSize: '12px', fontWeight: 500,
-                          padding: '3px 10px', borderRadius: '999px',
-                          ...badgeStyle(venda.status),
-                        }}>
-                          {venda.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 24px', color: 'var(--color-text-primary)', fontSize: '14px', fontWeight: 500 }}>
-                        R$ {Number(venda.total).toFixed(2)}
-                      </td>
-                      {/* ── Coluna de data ── */}
-                      <td style={{ padding: '14px 24px', color: 'var(--color-text-secondary)', fontSize: '13px' }}>
-                        {dataRelevante(venda)}
-                      </td>
-                    </tr>
-                  ))
+                  vendasFiltradas.map(venda => {
+                    const expandida = vendaExpandida === venda.id
+                    const itens = venda.itens ?? []
+                    return (
+                      <>
+                        {/* Linha principal */}
+                        <tr
+                          key={venda.id}
+                          onClick={e => toggleExpansao(e, venda.id)}
+                          style={{
+                            borderBottom: expandida ? 'none' : '1px solid var(--color-border)',
+                            cursor: 'pointer',
+                            background: expandida ? 'var(--color-bg-hover)' : 'transparent',
+                            transition: 'background 0.15s',
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = expandida ? 'var(--color-bg-hover)' : 'transparent')}
+                        >
+                          <td style={{ padding: '14px 0 14px 16px', color: 'var(--color-text-muted)', width: '40px' }}>
+                            {expandida ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                          </td>
+                          <td style={{ padding: '14px 0', color: 'var(--color-text-muted)', fontSize: '12px', fontFamily: 'monospace' }}>
+                            {abreviarUUID(venda.id)}
+                          </td>
+                          <td style={{ padding: '14px 24px 14px 0', color: 'var(--color-text-primary)', fontSize: '14px', fontWeight: 500 }}>
+                            {nomeCliente(venda.clienteId)}
+                          </td>
+                          <td style={{ padding: '14px 24px 14px 0' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 500, padding: '3px 10px', borderRadius: '999px', ...badgeStyle(venda.status) }}>
+                              {venda.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '14px 24px 14px 0', color: 'var(--color-text-primary)', fontSize: '14px', fontWeight: 500 }}>
+                            {formatarMoeda(Number(venda.total))}
+                          </td>
+                          <td style={{ padding: '14px 24px 14px 0', color: 'var(--color-text-secondary)', fontSize: '13px' }}>
+                            {dataRelevante(venda)}
+                          </td>
+                        </tr>
+
+                        {/* Linha expandida com itens */}
+                        {expandida && (
+                          <tr key={`${venda.id}-itens`} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            <td colSpan={6} style={{ padding: '0 24px 16px 56px', background: 'var(--color-bg-hover)' }}>
+                              {itens.length === 0 ? (
+                                <p style={{ color: 'var(--color-text-muted)', fontSize: '13px', padding: '8px 0' }}>
+                                  Nenhum item registrado nesta venda.
+                                </p>
+                              ) : (
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                                  <thead>
+                                    <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                      {['Produto', 'Qtd', 'Preço unit.', 'Subtotal'].map(col => (
+                                        <th key={col} style={{
+                                          textAlign: col === 'Produto' ? 'left' : 'right',
+                                          color: 'var(--color-text-muted)',
+                                          fontWeight: 500,
+                                          padding: '8px 12px 8px 0',
+                                          fontSize: '12px',
+                                        }}>
+                                          {col}
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {itens.map((item, idx) => (
+                                      <tr key={idx}>
+                                        <td style={{ padding: '8px 12px 8px 0', color: 'var(--color-text-primary)', fontWeight: 500 }}>
+                                          {item.nomeProduto}
+                                        </td>
+                                        <td style={{ padding: '8px 12px 8px 0', color: 'var(--color-text-secondary)', textAlign: 'right' }}>
+                                          {item.quantidade}
+                                        </td>
+                                        <td style={{ padding: '8px 12px 8px 0', color: 'var(--color-text-secondary)', textAlign: 'right' }}>
+                                          {formatarMoeda(item.precoUnitario.valor)}
+                                        </td>
+                                        <td style={{ padding: '8px 0', color: 'var(--color-text-primary)', fontWeight: 500, textAlign: 'right' }}>
+                                          {formatarMoeda(item.quantidade * item.precoUnitario.valor)}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    )
+                  })
                 )}
               </tbody>
             </table>
           </div>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '12px', marginTop: '10px' }}>
+            Clique em uma linha para ver os itens da venda
+          </p>
         </div>
       )}
     </Layout>

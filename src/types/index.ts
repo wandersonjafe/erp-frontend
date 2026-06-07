@@ -37,7 +37,15 @@ export interface Produto {
     categoria: 'ELETRONICO' | 'ALIMENTO' | 'VESTUARIO' | 'MOVEL' | 'OUTROS'
 }
 
-export interface Venda  {
+export interface ItemVenda {
+    id: string
+    produtoId: string
+    nomeProduto: string
+    quantidade: number
+    precoUnitario: { valor: number }
+}
+
+export interface Venda {
     id: string 
     clienteId: string
     status: 'ABERTA' | 'FECHADA' | 'CANCELADA'
@@ -45,6 +53,7 @@ export interface Venda  {
     dataCriacao: string | null
     dataFechamento: string | null
     dataCancelamento: string | null
+    itens: ItemVenda[]
 }
 
 export interface AdicionarItemRequest {
